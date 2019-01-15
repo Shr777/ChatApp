@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+    <title>Chat-App</title>
+    <style>
+        #messages{height:400px; background-color:lightyellow}
+        .card{border:1px solid black;}
+        div.chat-message:nth-child(odd) {
+  color: blue;
+  text-align: left;
+}
+
+div.chat-message:nth-child(even) {
+  color:red;
+  text-align: right;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 offset-md-3 col-sm-12">
+                <h1 class="text-center">Chat Application</h1>
+                <div id="status"></div> 
+                <div id="chat">
+                    <input type="text" id="name" class="form-control" placeholder="Enter name...">
+                    <textarea id="textarea" class="form-control" placeholder="Enter message..."></textarea>
+                    <br>  <div class="card">
+                        <div id="messages" class="card-block">
+
+                        </div>
+                    </div>
+                    
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+<script>
+    
+    (function(){
+        var element = function(id){
+            return document.getElementById(id);
+        }
+        // Get Elements
+        var status = element('status');
+        var messages = element('messages');
+        var textarea = element('textarea');
+        var name = element('name');
+       
+        // Set default status
+        var statusDefault = status.textContent;
+        var chatStatus = function(s){
+            // Set status
+            status.textContent = s;
+            if(s !== statusDefault){
+                var delay = setTimeout(function(){
+                    setStatus(statusDefault);
+                }, 4000);
+            }
+        }
+        
+        var socket = io.connect();
+        // Check for connection
+        if(socket !== undefined){
+            console.log('Connected to socket...');
+            //  Output
+            socket.on('output', function(data){
+                
+                if(data.length){
+                    for(var x = 0;x < data.length;x++){
+                        // Builds out message 
+                        
+                        var message = document.createElement('div');
+                        var t = document.createElement('div');
+                        message.setAttribute('class', 'chat-message');
+                        message.textContent = data[x].name+": "+data[x].message+"------->     "+data[x].t;
+                        messages.appendChild(message);
+                        messages.insertBefore(message, messages.firstChild);
+                    }
+                }
+            });
+            //  Status From Server
+            socket.on('status', function(data){
+                
+                chatStatus((typeof data === 'object')? data.message : data);
+            
+                if(data.clear){
+                    textarea.value = '';
+                }
+            });
+            //  Input
+            textarea.addEventListener('keydown', function(event){
+                if(event.which === 13 && event.shiftKey == false){
+                    // Emit to server input
+                    socket.emit('input', {
+                        name:name.value,
+                        message:textarea.value
+                    });
+                    event.preventDefault();
+                }
+            })
+            
+           
+           
+        }
+    })();
+</script>
+</body>
+</html>
